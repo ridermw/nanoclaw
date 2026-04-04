@@ -64,18 +64,18 @@ Messages and task operations are verified against group identity:
 | View all tasks | ✓ | Own only |
 | Manage other groups | ✓ | ✗ |
 
-### 5. Credential Isolation (OneCLI Agent Vault)
+### 5. Credential Isolation (Stdin Token Injection)
 
-Real API credentials **never enter containers**. NanoClaw uses [OneCLI's Agent Vault](https://github.com/onecli/onecli) to proxy outbound requests and inject credentials at the gateway level.
+Real API credentials are **never stored in container environment variables or images**. GitHub tokens are passed securely via stdin to containers at runtime and injected directly into the Copilot SDK client constructor.
 
 **How it works:**
-1. Credentials are registered once with `onecli secrets create`, stored and managed by OneCLI
-2. When NanoClaw spawns a container, it calls `applyContainerConfig()` to route outbound HTTPS through the OneCLI gateway
+1. The GitHub token is set in `.env` on the host (`COPILOT_GITHUB_TOKEN`)
+2. When NanoClaw spawns a container, the token is included in the ContainerInput JSON piped to stdin
 3. The gateway matches requests by host and path, injects the real credential, and forwards
 4. Agents cannot discover real credentials — not in environment, stdin, files, or `/proc`
 
 **Per-agent policies:**
-Each NanoClaw group gets its own OneCLI agent identity. This allows different credential policies per group (e.g. your sales agent vs. support agent). OneCLI supports rate limits, and time-bound access and approval flows are on the roadmap.
+Token patterns (gho_, ghu_, ghp_, github_pat_) are redacted from all log output to prevent accidental leaks.
 
 **NOT Mounted:**
 - Channel auth sessions (`store/auth/`) — host only
@@ -110,7 +110,7 @@ Each NanoClaw group gets its own OneCLI agent identity. This allows different cr
 │  • IPC authorization                                              │
 │  • Mount validation (external allowlist)                          │
 │  • Container lifecycle                                            │
-│  • OneCLI Agent Vault (injects credentials, enforces policies)   │
+│  • Stdin token injection (token passed via ContainerInput JSON)    │
 └────────────────────────────────┬─────────────────────────────────┘
                                  │
                                  ▼ Explicit mounts only, no secrets
@@ -119,7 +119,7 @@ Each NanoClaw group gets its own OneCLI agent identity. This allows different cr
 │  • Agent execution                                                │
 │  • Bash commands (sandboxed)                                      │
 │  • File operations (limited to mounts)                            │
-│  • API calls routed through OneCLI Agent Vault                   │
+│  • Token injected into CopilotClient constructor, not env vars    │
 │  • No real credentials in environment or filesystem              │
 └──────────────────────────────────────────────────────────────────┘
 ```

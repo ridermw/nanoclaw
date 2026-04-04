@@ -1,4 +1,6 @@
-# Claude Agent SDK Deep Dive
+# Copilot SDK Deep Dive
+
+> **Note:** This document was originally written for the Claude Agent SDK. It has been partially updated for the Copilot SDK transition. See `container/agent-runner/src/index.ts` for the current implementation.
 
 Findings from reverse-engineering `@anthropic-ai/claude-agent-sdk` v0.2.29–0.2.34 to understand how `query()` works, why agent teams subagents were being killed, and how to fix it. Supplemented with official SDK reference docs.
 

@@ -12,7 +12,7 @@ Host (macOS / Windows WSL)
     │   └── Container spawner → nested Docker daemon
     └── Docker-in-Docker
         └── nanoclaw-agent containers
-            └── Claude Agent SDK
+            └── Copilot SDK
 ```
 
 Each agent runs in its own container, inside a micro VM that is fully isolated from your host. Two layers of isolation: per-agent containers + the VM boundary.
@@ -77,7 +77,7 @@ NanoClaw must live inside the workspace directory — Docker-in-Docker can only 
 ```bash
 # Clone to home first (virtiofs can corrupt git pack files during clone)
 cd ~
-git clone https://github.com/qwibitai/nanoclaw.git
+git clone https://github.com/ridermw/nanoclaw.git
 
 # Replace with YOUR workspace path (the host path you passed to `docker sandbox create`)
 WORKSPACE=/Users/you/nanoclaw-workspace
@@ -204,7 +204,7 @@ npm run build
 cat > .env << EOF
 TELEGRAM_BOT_TOKEN=<your-token-from-botfather>
 ASSISTANT_NAME=nanoclaw
-ANTHROPIC_API_KEY=proxy-managed
+COPILOT_GITHUB_TOKEN=your-token-here
 EOF
 mkdir -p data/env && cp .env data/env/env
 
@@ -243,7 +243,7 @@ npm run build
 # Configure .env
 cat > .env << EOF
 ASSISTANT_NAME=nanoclaw
-ANTHROPIC_API_KEY=proxy-managed
+COPILOT_GITHUB_TOKEN=your-token-here
 EOF
 mkdir -p data/env && cp .env data/env/env
 
@@ -279,7 +279,7 @@ Apply both skills, patch both for proxy support, combine the `.env` variables, a
 npm start
 ```
 
-You don't need to set `ANTHROPIC_API_KEY` manually. The sandbox proxy intercepts requests and replaces `proxy-managed` with your real key automatically.
+Set `COPILOT_GITHUB_TOKEN` in your `.env` file. The token is passed securely to containers via stdin at runtime.
 
 ## Networking Details
 
@@ -347,7 +347,7 @@ docker sandbox network proxy <sandbox-name> \
 ### Git clone fails with "inflate: data stream error"
 Clone to a non-workspace path first, then move:
 ```bash
-cd ~ && git clone https://github.com/qwibitai/nanoclaw.git && mv nanoclaw /path/to/workspace/nanoclaw
+cd ~ && git clone https://github.com/ridermw/nanoclaw.git && mv nanoclaw /path/to/workspace/nanoclaw
 ```
 
 ### WhatsApp QR code doesn't display

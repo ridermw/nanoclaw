@@ -23,7 +23,7 @@
 
 [OpenClaw](https://github.com/openclaw/openclaw) is an impressive project, but I wouldn't have been able to sleep if I had given complex software I didn't understand full access to my life. OpenClaw has nearly half a million lines of code, 53 config files, and 70+ dependencies. Its security is at the application level (allowlists, pairing codes) rather than true OS-level isolation. Everything runs in one Node process with shared memory.
 
-NanoClaw provides that same core functionality, but in a codebase small enough to understand: one process and a handful of files. Claude agents run in their own Linux containers with filesystem isolation, not merely behind permission checks.
+NanoClaw provides that same core functionality, but in a codebase small enough to understand: one process and a handful of files. Agents run in their own Linux containers with filesystem isolation, not merely behind permission checks.
 
 ## Quick Start
 
@@ -74,7 +74,7 @@ Then run `npm install && npm run build` and start with `npm run dev`.
 - **Multi-channel messaging** - Talk to your assistant from WhatsApp, Telegram, Discord, Slack, or Gmail. Add channels with skills like `/add-whatsapp` or `/add-telegram`. Run one or many at the same time.
 - **Isolated group context** - Each group has its own `CLAUDE.md` memory, isolated filesystem, and runs in its own container sandbox with only that filesystem mounted to it.
 - **Main channel** - Your private channel (self-chat) for admin control; every group is completely isolated
-- **Scheduled tasks** - Recurring jobs that run Claude and can message you back
+- **Scheduled tasks** - Recurring jobs that run the agent and can message you back
 - **Web access** - Search and fetch content from the Web
 - **Container isolation** - Agents are sandboxed in Docker (macOS/Linux), [Docker Sandboxes](docs/docker-sandboxes.md) (micro VM isolation), or Apple Container (macOS)
 - **Credential security** - GitHub tokens are passed securely via stdin to containers at runtime. Tokens never appear in environment variables or container images.
@@ -109,7 +109,7 @@ NanoClaw doesn't use configuration files. To make changes, modify the code direc
 
 Or run `/customize` for guided changes.
 
-The codebase is small enough that Claude can safely modify it.
+The codebase is small enough that an AI assistant can safely modify it.
 
 ## Contributing
 
@@ -171,7 +171,7 @@ Agents run in containers, not behind application-level permission checks. They c
 
 **Why no configuration files?**
 
-We don't want configuration sprawl. Every user should customize NanoClaw so that the code does exactly what they want, rather than configuring a generic system. If you prefer having config files, you can tell Claude to add them.
+We don't want configuration sprawl. Every user should customize NanoClaw so that the code does exactly what they want, rather than configuring a generic system. If you prefer having config files, add them yourself — the code is simple enough.
 
 **Can I use different models?**
 
@@ -191,7 +191,7 @@ Check the logs in `logs/nanoclaw.log`. The codebase is small enough to trace any
 
 **Why isn't the setup working for me?**
 
-If you have issues, during setup, Claude will try to dynamically fix them. If that doesn't work, run `claude`, then run `/debug`. If Claude finds an issue that is likely affecting other users, open a PR to modify the setup SKILL.md.
+Check logs in `logs/nanoclaw.log`. If you find a common issue, open a PR to improve the setup documentation.
 
 **What changes will be accepted into the codebase?**
 

@@ -32,7 +32,7 @@ No configuration sprawl. If you want different behavior, modify the code. The co
 
 ### AI-Native Development
 
-I don't need an installation wizard - Claude Code guides the setup. I don't need a monitoring dashboard - I ask Claude Code what's happening. I don't need elaborate logging UIs - I ask Claude to read the logs. I don't need debugging tools - I describe the problem and Claude fixes it.
+I don't need an installation wizard - the Copilot CLI guides the setup. I don't need a monitoring dashboard - I check the logs directly. I don't need elaborate logging UIs - I read the logs. I don't need debugging tools - the codebase is small enough to trace any issue.
 
 The codebase assumes you have an AI collaborator. It doesn't need to be excessively self-documenting or self-debugging because Claude is always there.
 
@@ -56,10 +56,10 @@ Skills we'd like to see contributed:
 
 ## Vision
 
-A personal Claude assistant accessible via messaging, with minimal custom code.
+A personal AI assistant accessible via messaging, with minimal custom code.
 
 **Core components:**
-- **Claude Agent SDK** as the core agent
+- **Copilot SDK** as the core agent
 - **Containers** for isolated agent execution (Linux VMs)
 - **Multi-channel messaging** (WhatsApp, Telegram, Discord, Slack, Gmail) — add exactly the channels you need
 - **Persistent memory** per conversation and globally
@@ -68,7 +68,7 @@ A personal Claude assistant accessible via messaging, with minimal custom code.
 - **Browser automation** via agent-browser
 
 **Implementation approach:**
-- Use existing tools (channel libraries, Claude Agent SDK, MCP servers)
+- Use existing tools (channel libraries, Copilot SDK, MCP servers)
 - Minimal glue code
 - File-based systems where possible (CLAUDE.md for memory, folders for groups)
 
@@ -89,7 +89,7 @@ A personal Claude assistant accessible via messaging, with minimal custom code.
 - Agent runs in the group's folder, automatically inherits both CLAUDE.md files
 
 ### Session Management
-- Each group maintains a conversation session (via Claude Agent SDK)
+- Each group maintains a conversation session (via Copilot SDK)
 - Sessions auto-compact when context gets too long, preserving critical information
 
 ### Container Isolation
@@ -138,11 +138,11 @@ A personal Claude assistant accessible via messaging, with minimal custom code.
 - Tools: `schedule_task`, `list_tasks`, `pause_task`, `resume_task`, `cancel_task`, `send_message`
 - Tasks stored in SQLite with run history
 - Scheduler loop checks for due tasks every minute
-- Tasks execute Claude Agent SDK in containerized group context
+- Tasks execute Copilot SDK in containerized group context
 
 ### Web Access
 - Built-in WebSearch and WebFetch tools
-- Standard Claude Agent SDK capabilities
+- Standard Copilot SDK capabilities
 
 ### Browser Automation
 - agent-browser CLI with Chromium in container
@@ -156,8 +156,8 @@ A personal Claude assistant accessible via messaging, with minimal custom code.
 
 ### Philosophy
 - Minimal configuration files
-- Setup and customization done via Claude Code
-- Users clone the repo and run Claude Code to configure
+- Setup and customization done via the Copilot CLI
+- Users clone the repo and configure via CLI
 - Each user gets a custom setup matching their exact needs
 
 ### Skills
