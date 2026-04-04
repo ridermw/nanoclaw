@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  An AI assistant that runs agents securely in their own containers. Lightweight, built to be easily understood and completely customized for your needs.
+  <b>Copilot Edition</b> — An AI assistant that runs agents securely in their own containers, powered by GitHub Copilot instead of Claude.
 </p>
 
 <p align="center">
@@ -17,6 +17,8 @@
 
 ---
 
+> **This is a fork of [NanoClaw](https://github.com/qwibitai/nanoclaw) that replaces the Anthropic Claude Agent SDK with the official [GitHub Copilot SDK](https://github.com/github/copilot-sdk).** Everything works the same way — same architecture, same channels, same container isolation — but powered by your GitHub Copilot subscription instead of an Anthropic API key.
+
 ## Why I Built NanoClaw
 
 [OpenClaw](https://github.com/openclaw/openclaw) is an impressive project, but I wouldn't have been able to sleep if I had given complex software I didn't understand full access to my life. OpenClaw has nearly half a million lines of code, 53 config files, and 70+ dependencies. Its security is at the application level (allowlists, pairing codes) rather than true OS-level isolation. Everything runs in one Node process with shared memory.
@@ -26,43 +28,46 @@ NanoClaw provides that same core functionality, but in a codebase small enough t
 ## Quick Start
 
 ```bash
-gh repo fork qwibitai/nanoclaw --clone
+gh repo fork ridermw/nanoclaw --clone
 cd nanoclaw
-claude
 ```
 
 <details>
 <summary>Without GitHub CLI</summary>
 
-1. Fork [qwibitai/nanoclaw](https://github.com/qwibitai/nanoclaw) on GitHub (click the Fork button)
+1. Fork [ridermw/nanoclaw](https://github.com/ridermw/nanoclaw) on GitHub (click the Fork button)
 2. `git clone https://github.com/<your-username>/nanoclaw.git`
 3. `cd nanoclaw`
-4. `claude`
 
 </details>
 
-Then run `/setup`. Claude Code handles everything: dependencies, authentication, container setup and service configuration.
+Set your GitHub token in `.env`:
+```bash
+echo "COPILOT_GITHUB_TOKEN=$(gh auth token)" > .env
+```
 
-> **Note:** Commands prefixed with `/` (like `/setup`, `/add-whatsapp`) are [Claude Code skills](https://code.claude.com/docs/en/skills). Type them inside the `claude` CLI prompt, not in your regular terminal. If you don't have Claude Code installed, get it at [claude.com/product/claude-code](https://claude.com/product/claude-code).
+Then run `npm install && npm run build` and start with `npm run dev`.
+
+> **Note:** This fork uses the GitHub Copilot SDK. You need a GitHub Copilot subscription (Individual, Business, or Enterprise). No Anthropic API key required.
 
 ## Philosophy
 
-**Small enough to understand.** One process, a few source files and no microservices. If you want to understand the full NanoClaw codebase, just ask Claude Code to walk you through it.
+**Small enough to understand.** One process, a few source files and no microservices. If you want to understand the full NanoClaw codebase, just read it — it's small enough.
 
 **Secure by isolation.** Agents run in Linux containers (Apple Container on macOS, or Docker) and they can only see what's explicitly mounted. Bash access is safe because commands run inside the container, not on your host.
 
-**Built for the individual user.** NanoClaw isn't a monolithic framework; it's software that fits each user's exact needs. Instead of becoming bloatware, NanoClaw is designed to be bespoke. You make your own fork and have Claude Code modify it to match your needs.
+**Built for the individual user.** NanoClaw isn't a monolithic framework; it's software that fits each user's exact needs. Instead of becoming bloatware, NanoClaw is designed to be bespoke. You make your own fork and modify it to match your needs.
 
 **Customization = code changes.** No configuration sprawl. Want different behavior? Modify the code. The codebase is small enough that it's safe to make changes.
 
 **AI-native.**
-- No installation wizard; Claude Code guides setup.
-- No monitoring dashboard; ask Claude what's happening.
-- No debugging tools; describe the problem and Claude fixes it.
+- No complex setup wizard; a few commands get you running.
+- No monitoring dashboard; check the logs directly.
+- No debugging tools; the codebase is simple enough to trace any issue.
 
-**Skills over features.** Instead of adding features (e.g. support for Telegram) to the codebase, contributors submit [claude code skills](https://code.claude.com/docs/en/skills) like `/add-telegram` that transform your fork. You end up with clean code that does exactly what you need.
+**Skills over features.** Instead of adding features (e.g. support for Telegram) to the codebase, contributors submit skills like `/add-telegram` that transform your fork. You end up with clean code that does exactly what you need.
 
-**Best harness, best model.** NanoClaw runs on the Claude Agent SDK, which means you're running Claude Code directly. Claude Code is highly capable and its coding and problem-solving capabilities allow it to modify and expand NanoClaw and tailor it to each user.
+**Best harness, your subscription.** This fork runs on the GitHub Copilot SDK, so anyone with a Copilot subscription can use it. No separate Anthropic API key needed.
 
 ## What It Supports
 
@@ -72,7 +77,7 @@ Then run `/setup`. Claude Code handles everything: dependencies, authentication,
 - **Scheduled tasks** - Recurring jobs that run Claude and can message you back
 - **Web access** - Search and fetch content from the Web
 - **Container isolation** - Agents are sandboxed in Docker (macOS/Linux), [Docker Sandboxes](docs/docker-sandboxes.md) (micro VM isolation), or Apple Container (macOS)
-- **Credential security** - Agents never hold raw API keys. Outbound requests route through [OneCLI's Agent Vault](https://github.com/onecli/onecli), which injects credentials at request time and enforces per-agent policies and rate limits.
+- **Credential security** - GitHub tokens are passed securely via stdin to containers at runtime. Tokens never appear in environment variables or container images.
 - **Agent Swarms** - Spin up teams of specialized agents that collaborate on complex tasks
 - **Optional integrations** - Add Gmail (`/add-gmail`) and more via skills
 
@@ -95,7 +100,7 @@ From the main channel (your self-chat), you can manage groups and tasks:
 
 ## Customizing
 
-NanoClaw doesn't use configuration files. To make changes, just tell Claude Code what you want:
+NanoClaw doesn't use configuration files. To make changes, modify the code directly:
 
 - "Change the trigger word to @Bob"
 - "Remember in the future to make responses shorter and more direct"
@@ -125,13 +130,14 @@ Skills we'd like to see:
 
 - macOS, Linux, or Windows (via WSL2)
 - Node.js 20+
-- [Claude Code](https://claude.ai/download)
+- [GitHub Copilot](https://github.com/features/copilot) subscription (Individual, Business, or Enterprise)
+- [GitHub CLI](https://cli.github.com/) (`gh auth token` provides the token)
 - [Apple Container](https://github.com/apple/container) (macOS) or [Docker](https://docker.com/products/docker-desktop) (macOS/Linux)
 
 ## Architecture
 
 ```
-Channels --> SQLite --> Polling loop --> Container (Claude Agent SDK) --> Response
+Channels --> SQLite --> Polling loop --> Container (Copilot SDK) --> Response
 ```
 
 Single Node.js process. Channels are added via skills and self-register at startup — the orchestrator connects whichever ones have credentials present. Agents execute in isolated Linux containers with filesystem isolation. Only mounted directories are accessible. Per-group message queue with concurrency control. IPC via filesystem.
@@ -161,31 +167,27 @@ Yes. Docker is the default runtime and works on macOS, Linux, and Windows (via W
 
 **Is this secure?**
 
-Agents run in containers, not behind application-level permission checks. They can only access explicitly mounted directories. Credentials never enter the container — outbound API requests route through [OneCLI's Agent Vault](https://github.com/onecli/onecli), which injects authentication at the proxy level and supports rate limits and access policies. You should still review what you're running, but the codebase is small enough that you actually can. See the [security documentation](https://docs.nanoclaw.dev/concepts/security) for the full security model.
+Agents run in containers, not behind application-level permission checks. They can only access explicitly mounted directories. GitHub tokens are injected securely via stdin — they never appear in container environment variables or Docker args. Token patterns are redacted from all log output. You should still review what you're running, but the codebase is small enough that you actually can.
 
 **Why no configuration files?**
 
 We don't want configuration sprawl. Every user should customize NanoClaw so that the code does exactly what they want, rather than configuring a generic system. If you prefer having config files, you can tell Claude to add them.
 
-**Can I use third-party or open-source models?**
+**Can I use different models?**
 
-Yes. NanoClaw supports any Claude API-compatible model endpoint. Set these environment variables in your `.env` file:
+Yes. Set the `COPILOT_MODEL` environment variable in your `.env` file:
 
 ```bash
-ANTHROPIC_BASE_URL=https://your-api-endpoint.com
-ANTHROPIC_AUTH_TOKEN=your-token-here
+COPILOT_MODEL=gpt-4.1       # default
+COPILOT_MODEL=claude-sonnet-4
+COPILOT_MODEL=o3
 ```
 
-This allows you to use:
-- Local models via [Ollama](https://ollama.ai) with an API proxy
-- Open-source models hosted on [Together AI](https://together.ai), [Fireworks](https://fireworks.ai), etc.
-- Custom model deployments with Anthropic-compatible APIs
-
-Note: The model must support the Anthropic API format for best compatibility.
+Any model available through your GitHub Copilot subscription can be used.
 
 **How do I debug issues?**
 
-Ask Claude Code. "Why isn't the scheduler running?" "What's in the recent logs?" "Why did this message not get a response?" That's the AI-native approach that underlies NanoClaw.
+Check the logs in `logs/nanoclaw.log`. The codebase is small enough to trace any issue directly.
 
 **Why isn't the setup working for me?**
 

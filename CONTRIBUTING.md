@@ -4,8 +4,8 @@
 
 1. **Check for existing work.** Search open PRs and issues before starting:
    ```bash
-   gh pr list --repo qwibitai/nanoclaw --search "<your feature>"
-   gh issue list --repo qwibitai/nanoclaw --search "<your feature>"
+   gh pr list --repo ridermw/nanoclaw --search "<your feature>"
+   gh issue list --repo ridermw/nanoclaw --search "<your feature>"
    ```
    If a related PR or issue exists, build on it rather than duplicating effort.
 
@@ -21,7 +21,7 @@
 
 ## Skills
 
-NanoClaw uses [Claude Code skills](https://code.claude.com/docs/en/skills) — markdown files with optional supporting files that teach Claude how to do something. There are four types of skills in NanoClaw, each serving a different purpose.
+NanoClaw uses skills — markdown files with optional supporting files that teach the assistant how to do something. There are four types of skills in NanoClaw, each serving a different purpose.
 
 ### Why skills?
 
@@ -43,7 +43,7 @@ Add capabilities to NanoClaw by merging a git branch. The SKILL.md contains setu
 3. Claude walks through interactive setup (env vars, bot creation, etc.)
 
 **Contributing a feature skill:**
-1. Fork `qwibitai/nanoclaw` and branch from `main`
+1. Fork `ridermw/nanoclaw` and branch from `main`
 2. Make the code changes (new files, modified source, updated `package.json`, etc.)
 3. Add a SKILL.md in `.claude/skills/<name>/` with setup instructions — step 1 should be merging the branch
 4. Open a PR. We'll create the `skill/<name>` branch from your work
@@ -86,7 +86,7 @@ Skills that run inside the agent container, not on the host. These teach the con
 
 **Examples:** `agent-browser` (web browsing), `capabilities` (/capabilities command), `status` (/status command), `slack-formatting` (Slack mrkdwn syntax)
 
-**Key difference:** These are NOT invoked by the user on the host. They're loaded by Claude Code inside the container and influence how the agent behaves.
+**Key difference:** These are NOT invoked by the user on the host. They're loaded by the Copilot agent inside the container and influence how the agent behaves.
 
 **Guidelines:**
 - Follow the same SKILL.md + frontmatter format
@@ -95,7 +95,7 @@ Skills that run inside the agent container, not on the host. These teach the con
 
 ### SKILL.md format
 
-All skills use the [Claude Code skills standard](https://code.claude.com/docs/en/skills):
+All skills use the [skills standard](https://code.claude.com/docs/en/skills):
 
 ```markdown
 ---
