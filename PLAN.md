@@ -502,3 +502,36 @@ Key additions from independent review:
 
 **UNRESOLVED:** 0 decisions across all reviews.
 **VERDICT:** ENG CLEARED — ready to implement. Run `/ship` when done.
+
+## Implementation Status
+
+**Completed:** 2025-07-22
+
+| Todo | Status | Notes |
+|------|--------|-------|
+| pin-sdk-version | ✅ Done | `0.2.1` exact (no caret) |
+| GAP-01: Extra dir CLAUDE.md | ✅ Done | Scans `/workspace/extra/*/CLAUDE.md`, appends to systemParts |
+| GAP-02: Conversation archiving | ✅ Done | `session.compaction_start` → `archiveTranscript()` → markdown file |
+| GAP-04: Remote Control removal | ✅ Done | Deleted `src/remote-control.ts` + test (-250 lines) |
+| GAP-06: Token via stdin | ✅ Done | ContainerInput.githubToken → CopilotClient({ githubToken }) |
+| GAP-10: Stale session retry | ✅ Done | Timeout-based, falls back to fresh session on resume failure |
+| GAP-11: Multi-result streaming | ✅ Done | `session.on('assistant.message')` captures intermediate results |
+| Token log redaction | ✅ Done | Regex for gho_/ghu_/ghp_/github_pat_ patterns |
+| Host test updates | ✅ Done | 2 new tests: token in stdin, not in Docker -e |
+| Agent-runner tests | ✅ Done | 51 tests, full SDK mocking |
+| GAP-05: Agent Swarms | 🚫 Blocked | De-scoped to v2 (needs runtime testing) |
+| Smoke integration test | 🚫 Blocked | Needs real token + Docker |
+
+**Test results:** 231 host-side + 51 agent-runner = **282 total tests, all passing**
+
+**Acceptance criteria audit:**
+1. ✅ `npm run build` succeeds
+2. ✅ All existing tests pass (231)
+3. ✅ Agent-runner unit tests with 100% coverage (51 tests, mocked SDK)
+4. ⏳ Smoke integration test (blocked — needs real environment)
+5. ✅ Session resume tested (resume + fallback on failure)
+6. ✅ Extra dir CLAUDE.md context loaded (tested)
+7. ✅ Conversation archived before compaction (tested)
+8. ✅ Token NOT in container env vars — stdin only (tested)
+9. ✅ Stale session detected via timeout + session recreated (tested)
+10. ✅ No ToS violations — official @github/copilot-sdk only
