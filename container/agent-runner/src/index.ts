@@ -23,6 +23,7 @@ import {
   CopilotSession,
   approveAll,
   type AssistantMessageEvent,
+  type SessionEvent,
 } from '@github/copilot-sdk';
 import { fileURLToPath } from 'url';
 
@@ -35,6 +36,7 @@ interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   script?: string;
+  githubToken?: string;
 }
 
 interface ContainerOutput {
@@ -69,8 +71,11 @@ function writeOutput(output: ContainerOutput): void {
   console.log(OUTPUT_END_MARKER);
 }
 
+// Redact token-shaped strings from log messages to prevent accidental leaks.
+const TOKEN_REDACT_RE = /\b(gho_|ghu_|ghp_|github_pat_)\S+/g;
+
 function log(message: string): void {
-  console.error(`[agent-runner] ${message}`);
+  console.error(`[agent-runner] ${message.replace(TOKEN_REDACT_RE, '[REDACTED]')}`);
 }
 
 /**
@@ -150,7 +155,8 @@ function waitForIpcMessage(): Promise<string | null> {
 
 /**
  * Run a single turn using the Copilot SDK session.
- * Sends the prompt, polls for IPC during execution, and emits output markers.
+ * Sends the prompt, polls for IPC during execution, and streams intermediate
+ * results via writeOutput as they arrive from the SDK event handler.
  */
 async function runQuery(
   session: CopilotSession,
@@ -188,6 +194,17 @@ async function runQuery(
 
   let resultText: string | null = null;
 
+  // Stream intermediate assistant messages as they arrive.
+  // Multi-step agent workflows (tool use, sub-agents) produce multiple
+  // assistant.message events before the final idle. We emit each as a
+  // writeOutput so the host can forward partial results to the user.
+  const intermediateMessages: string[] = [];
+  const unsubscribe = session.on('assistant.message', (event) => {
+    if (event.data?.content) {
+      intermediateMessages.push(event.data.content);
+    }
+  });
+
   try {
     // sendAndWait blocks until the session is idle (turn complete).
     // Timeout is generous — agent may run complex multi-step tasks.
@@ -199,6 +216,11 @@ async function runQuery(
     if (response?.data?.content) {
       resultText = response.data.content;
       log(`Turn complete: ${resultText.slice(0, 200)}`);
+    } else if (intermediateMessages.length > 0) {
+      // sendAndWait may return undefined if the last event isn't a text message,
+      // but intermediate messages were captured via the event handler.
+      resultText = intermediateMessages[intermediateMessages.length - 1];
+      log(`Turn complete (from intermediate): ${resultText.slice(0, 200)}`);
     } else {
       log('Turn complete: no text content in response');
     }
@@ -211,6 +233,7 @@ async function runQuery(
     }
   } finally {
     ipcPolling = false;
+    unsubscribe();
   }
 
   return { result: resultText, closedDuringQuery, bufferedMessages };
@@ -271,6 +294,73 @@ async function runScript(script: string): Promise<ScriptResult | null> {
   });
 }
 
+const CONVERSATIONS_DIR = '/workspace/group/conversations';
+
+/**
+ * Format session events into readable markdown for archiving.
+ */
+function formatTranscriptMarkdown(events: SessionEvent[]): string {
+  const lines: string[] = [];
+  lines.push(`# Conversation Archive`);
+  lines.push(`Archived: ${new Date().toISOString()}\n`);
+
+  for (const event of events) {
+    if (event.type === 'user.message') {
+      lines.push(`## User\n`);
+      lines.push(event.data.content);
+      lines.push('');
+    } else if (event.type === 'assistant.message') {
+      lines.push(`## Assistant\n`);
+      lines.push(event.data.content);
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate a short filename-safe summary from the first user message.
+ */
+function generateArchiveName(events: SessionEvent[]): string {
+  const firstUser = events.find((e) => e.type === 'user.message');
+  if (firstUser && firstUser.type === 'user.message') {
+    return firstUser.data.content
+      .slice(0, 40)
+      .replace(/[^a-zA-Z0-9 ]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .toLowerCase() || 'conversation';
+  }
+  return 'conversation';
+}
+
+/**
+ * Archive the current session transcript to a markdown file.
+ * Called before compaction to preserve the full conversation.
+ */
+async function archiveTranscript(session: CopilotSession): Promise<void> {
+  try {
+    const events = await session.getMessages();
+    if (!events || events.length === 0) {
+      log('No events to archive');
+      return;
+    }
+
+    const markdown = formatTranscriptMarkdown(events);
+    const date = new Date().toISOString().slice(0, 10);
+    const name = generateArchiveName(events);
+    const filename = `${date}-${name}.md`;
+
+    fs.mkdirSync(CONVERSATIONS_DIR, { recursive: true });
+    const filepath = path.join(CONVERSATIONS_DIR, filename);
+    fs.writeFileSync(filepath, markdown, 'utf-8');
+    log(`Archived conversation to ${filename} (${events.length} events)`);
+  } catch (err) {
+    log(`Failed to archive transcript: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 async function main(): Promise<void> {
   let containerInput: ContainerInput;
 
@@ -295,6 +385,19 @@ async function main(): Promise<void> {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const mcpServerPath = path.join(__dirname, 'ipc-mcp-stdio.js');
   const model = process.env.COPILOT_MODEL || 'gpt-4.1';
+
+  // Token is passed securely via stdin (ContainerInput) instead of env var.
+  // Fail fast with a clear error if not provided.
+  const githubToken = containerInput.githubToken;
+  if (!githubToken) {
+    log('FATAL: githubToken not provided in container input');
+    writeOutput({
+      status: 'error',
+      result: null,
+      error: 'githubToken missing from container input. Check host-side COPILOT_GITHUB_TOKEN.',
+    });
+    process.exit(1);
+  }
 
   fs.mkdirSync(IPC_INPUT_DIR, { recursive: true });
 
@@ -340,7 +443,8 @@ async function main(): Promise<void> {
   // Load memory files as additional system context.
   // Global CLAUDE.md is shared across all non-main groups.
   // Per-group CLAUDE.md provides group-specific persona/memory.
-  // Both are loaded and concatenated into the system message.
+  // Extra directories (mounted at /workspace/extra/*) may also contain CLAUDE.md.
+  // All are loaded and concatenated into the system message.
   const systemParts: string[] = [];
   const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
   const groupClaudeMdPath = '/workspace/group/CLAUDE.md';
@@ -350,6 +454,31 @@ async function main(): Promise<void> {
   if (fs.existsSync(groupClaudeMdPath)) {
     systemParts.push(fs.readFileSync(groupClaudeMdPath, 'utf-8'));
   }
+
+  // Scan extra directories for CLAUDE.md files (additionalMounts from group config).
+  // These provide project-specific context from mounted codebases.
+  const extraDir = '/workspace/extra';
+  if (fs.existsSync(extraDir)) {
+    try {
+      for (const entry of fs.readdirSync(extraDir)) {
+        const extraClaudeMd = path.join(extraDir, entry, 'CLAUDE.md');
+        try {
+          if (fs.existsSync(extraClaudeMd)) {
+            const content = fs.readFileSync(extraClaudeMd, 'utf-8').trim();
+            if (content) {
+              systemParts.push(content);
+              log(`Loaded extra CLAUDE.md from ${entry}`);
+            }
+          }
+        } catch (err) {
+          log(`Failed to read ${extraClaudeMd}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    } catch (err) {
+      log(`Failed to scan extra dirs: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   const systemContent = systemParts.length > 0 ? systemParts.join('\n\n---\n\n') : undefined;
 
   // Initialize Copilot SDK client and session
@@ -357,6 +486,8 @@ async function main(): Promise<void> {
   const client = new CopilotClient({
     cwd: '/workspace/group',
     logLevel: 'warning',
+    // Token passed securely via stdin, not environment variable.
+    githubToken,
     // The Copilot CLI is installed globally in the container (npm install -g @github/copilot).
     // We must tell the SDK where to find it since it's not a local dependency.
     cliPath: 'copilot',
@@ -390,11 +521,33 @@ async function main(): Promise<void> {
   try {
     if (containerInput.sessionId) {
       log(`Resuming session: ${containerInput.sessionId}`);
-      session = await client.resumeSession(containerInput.sessionId, sessionConfig);
+      try {
+        session = await client.resumeSession(containerInput.sessionId, sessionConfig);
+      } catch (resumeErr) {
+        // Stale/corrupt session — Copilot SDK may throw on resume (bug #540).
+        // Fall back to creating a fresh session instead of failing entirely.
+        const msg = resumeErr instanceof Error ? resumeErr.message : String(resumeErr);
+        log(`Resume failed (stale session?): ${msg} — creating fresh session`);
+        writeOutput({
+          status: 'error',
+          result: null,
+          error: `stale session: resume failed — ${msg}`,
+        });
+        session = await client.createSession(sessionConfig);
+      }
     } else {
       session = await client.createSession(sessionConfig);
     }
     log(`Session ready: ${session.sessionId}`);
+
+    // Archive conversation transcript before compaction to preserve full history.
+    // The Copilot SDK emits session.compaction_start before pruning context.
+    session.on('session.compaction_start', () => {
+      log('Compaction starting — archiving transcript...');
+      archiveTranscript(session).catch((err) => {
+        log(`Archive during compaction failed: ${err instanceof Error ? err.message : String(err)}`);
+      });
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log(`Failed to create Copilot session: ${msg}`);
@@ -467,4 +620,24 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+// Auto-run when executed as the entry point (not when imported by tests)
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main();
+}
+
+// Exports for testing
+export {
+  readStdin,
+  writeOutput,
+  log,
+  shouldClose,
+  drainIpcInput,
+  waitForIpcMessage,
+  runQuery,
+  runScript,
+  formatTranscriptMarkdown,
+  generateArchiveName,
+  archiveTranscript,
+  main,
+};
+export type { ContainerInput, ContainerOutput, ScriptResult };

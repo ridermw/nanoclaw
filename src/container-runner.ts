@@ -13,7 +13,6 @@ import {
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
-  COPILOT_GITHUB_TOKEN,
   COPILOT_MODEL,
   TIMEZONE,
 } from './config.js';
@@ -41,6 +40,7 @@ export interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   script?: string;
+  githubToken?: string;
 }
 
 export interface ContainerOutput {
@@ -77,7 +77,7 @@ function buildVolumeMounts(
     });
 
     // Shadow .env so the agent cannot read channel tokens from the mounted project root.
-    // Only COPILOT_GITHUB_TOKEN is injected via env var; all other secrets stay hidden.
+    // Token is passed securely via stdin (ContainerInput.githubToken), not env vars.
     const envFile = path.join(projectRoot, '.env');
     if (fs.existsSync(envFile)) {
       mounts.push({
@@ -216,11 +216,8 @@ function buildContainerArgs(
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
 
-  // Inject Copilot credentials directly as env vars.
-  // Containers are ephemeral and isolated — token exposure is acceptable.
-  if (COPILOT_GITHUB_TOKEN) {
-    args.push('-e', `COPILOT_GITHUB_TOKEN=${COPILOT_GITHUB_TOKEN}`);
-  }
+  // Model is non-sensitive config — pass via env var (12-factor pattern).
+  // Token is passed securely via stdin (ContainerInput.githubToken).
   args.push('-e', `COPILOT_MODEL=${COPILOT_MODEL}`);
 
   // Runtime-specific args for host gateway resolution
