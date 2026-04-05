@@ -57,7 +57,7 @@ Confirm which tool families are available to you:
 ```bash
 which agent-browser 2>/dev/null && echo "agent-browser: available" || echo "agent-browser: not installed"
 node --version 2>/dev/null
-claude --version 2>/dev/null
+copilot --version 2>/dev/null
 ```
 
 ### 5. Task snapshot
@@ -93,7 +93,7 @@ Present as a clean, readable message:
 *Container:*
 • agent-browser: ✓ / not installed
 • Node: vXX.X.X
-• Claude Code: vX.X.X
+• Copilot CLI: vX.X.X
 
 *Scheduled Tasks:*
 • N active tasks / No scheduled tasks

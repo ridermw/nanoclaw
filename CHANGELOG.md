@@ -1,8 +1,23 @@
 # Changelog
 
-All notable changes to NanoClaw will be documented in this file.
+All notable changes to NanoPilot (formerly NanoClaw Copilot Edition) will be documented in this file.
 
-For detailed release notes, see the [full changelog on the documentation site](https://docs.nanoclaw.dev/changelog).
+## [2.0.0] - 2026-04-04 (NanoPilot)
+
+**Breaking:** Replaced Anthropic Claude Agent SDK with GitHub Copilot SDK (`@github/copilot-sdk`).
+
+- Agents now run on GitHub Copilot instead of Claude — requires a Copilot subscription, no Anthropic API key needed
+- Token passed securely via stdin to `CopilotClient({ githubToken })` — never in env vars or Docker args
+- Log redaction for GitHub token patterns (`gho_`, `ghu_`, `ghp_`, `github_pat_`)
+- Stale session retry: falls back to fresh session on resume failure (Copilot SDK bug #540)
+- Conversation archiving before context compaction via `session.compaction_start` event
+- Multi-result streaming via `assistant.message` event handler
+- Extra directory CLAUDE.md loading from mounted codebases
+- Removed `remote-control` feature (spawned Claude CLI binary, no Copilot equivalent)
+- Removed OneCLI Agent Vault dependency
+- Pinned `@github/copilot-sdk` to exact `0.2.1` (pre-1.0 semver)
+- 51 new agent-runner unit tests with full SDK mocking
+- 2 new host-side token security tests
 
 ## [1.2.36] - 2026-03-26
 

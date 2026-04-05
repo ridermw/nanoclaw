@@ -52,8 +52,8 @@ sysctl net.inet.ip.forwarding
 
 # Test container internet access
 container run --rm --entrypoint curl nanoclaw-agent:latest \
-  -s4 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://api.anthropic.com
-# Expected: 404
+  -s4 --connect-timeout 5 -o /dev/null -w "%{http_code}" https://api.github.com
+# Expected: 200
 
 # Check bridge interface (only exists when a container is running)
 ifconfig bridge100

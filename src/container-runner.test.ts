@@ -14,7 +14,7 @@ vi.mock('./config.js', () => ({
   DATA_DIR: '/tmp/nanoclaw-test-data',
   GROUPS_DIR: '/tmp/nanoclaw-test-groups',
   IDLE_TIMEOUT: 1800000, // 30min
-  ONECLI_URL: 'http://localhost:10254',
+  COPILOT_MODEL: 'gpt-4.1',
   TIMEZONE: 'America/Los_Angeles',
 }));
 
@@ -57,17 +57,6 @@ vi.mock('./container-runtime.js', () => ({
   hostGatewayArgs: () => [],
   readonlyMountArgs: (h: string, c: string) => ['-v', `${h}:${c}:ro`],
   stopContainer: vi.fn(),
-}));
-
-// Mock OneCLI SDK
-vi.mock('@onecli-sh/sdk', () => ({
-  OneCLI: class {
-    applyContainerConfig = vi.fn().mockResolvedValue(true);
-    createAgent = vi.fn().mockResolvedValue({ id: 'test' });
-    ensureAgent = vi
-      .fn()
-      .mockResolvedValue({ name: 'test', identifier: 'test', created: true });
-  },
 }));
 
 // Create a controllable fake ChildProcess
@@ -138,6 +127,49 @@ describe('container-runner timeout behavior', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('token is NOT passed as Docker env var', async () => {
+    const { spawn } = await import('child_process');
+    const resultPromise = runContainerAgent(
+      testGroup,
+      { ...testInput, githubToken: 'gho_secret_token_xyz' },
+      () => {},
+    );
+
+    // Check spawn args don't contain COPILOT_GITHUB_TOKEN
+    const spawnArgs = (spawn as ReturnType<typeof vi.fn>).mock.calls[0];
+    const dockerArgs: string[] = spawnArgs[1];
+    const tokenEnvArg = dockerArgs.find((arg: string) =>
+      arg.includes('COPILOT_GITHUB_TOKEN='),
+    );
+    expect(tokenEnvArg).toBeUndefined();
+
+    fakeProc.emit('close', 0);
+    await vi.advanceTimersByTimeAsync(10);
+    await resultPromise;
+  });
+
+  it('token is passed via stdin in ContainerInput JSON', async () => {
+    const stdinChunks: string[] = [];
+    fakeProc.stdin.on('data', (chunk: Buffer) => {
+      stdinChunks.push(chunk.toString());
+    });
+
+    const resultPromise = runContainerAgent(
+      testGroup,
+      { ...testInput, githubToken: 'gho_secret_token_xyz' },
+      () => {},
+    );
+
+    // stdin receives the full ContainerInput JSON including the token
+    const stdinData = stdinChunks.join('');
+    const parsed = JSON.parse(stdinData);
+    expect(parsed.githubToken).toBe('gho_secret_token_xyz');
+
+    fakeProc.emit('close', 0);
+    await vi.advanceTimersByTimeAsync(10);
+    await resultPromise;
   });
 
   it('timeout after output resolves as success', async () => {
