@@ -51,11 +51,11 @@ Skills are split into two categories:
 Users never interact with the marketplace directly. The operational skills `/setup` and `/customize` handle plugin installation transparently:
 
 ```bash
-# Claude runs this behind the scenes — users don't see it
-claude plugin install nanoclaw-skills@nanoclaw-skills --scope project
+# Copilot runs this behind the scenes — users don't see it
+copilot plugin install nanoclaw-skills@nanoclaw-skills --scope project
 ```
 
-Skills are hot-loaded after `claude plugin install` — no restart needed. This means `/setup` can install the marketplace plugin, then immediately run any feature skill, all in one session.
+Skills are hot-loaded after `copilot plugin install` — no restart needed. This means `/setup` can install the marketplace plugin, then immediately run any feature skill, all in one session.
 
 ### Selective skill installation
 
@@ -221,9 +221,9 @@ A GitHub Action runs on every push to `main`:
    ```
 3. Run the CLI:
    ```bash
-   claude
+   copilot
    ```
-4. Run `/setup` — Claude handles dependencies, authentication, container setup, service configuration, and adds `upstream` remote if not present
+4. Run `/setup` — Copilot handles dependencies, authentication, container setup, service configuration, and adds `upstream` remote if not present
 
 Forking is recommended because it gives users a remote to push their customizations to. Clone-only works for trying things out but provides no remote backup.
 
@@ -405,10 +405,10 @@ Once merged, all NanoClaw users automatically discover the community marketplace
 
 ### Installing community skills
 
-`/setup` and `/customize` ask users whether they want to enable community skills. If yes, Claude installs community marketplace plugins via `claude plugin install`:
+`/setup` and `/customize` ask users whether they want to enable community skills. If yes, Copilot installs community marketplace plugins via `copilot plugin install`:
 
 ```bash
-claude plugin install alice-skills@alice-nanoclaw-skills --scope project
+copilot plugin install alice-skills@alice-nanoclaw-skills --scope project
 ```
 
 Community skills are hot-loaded and immediately available — no restart needed. Dependent skills are only offered after their prerequisites are met (e.g., community Telegram add-ons only after Telegram is installed).
@@ -540,7 +540,7 @@ Before:
 ```bash
 git clone https://github.com/ridermw/nanoclaw.git
 cd NanoClaw
-claude
+copilot
 ```
 
 After:
@@ -548,7 +548,7 @@ After:
 1. Fork ridermw/nanoclaw on GitHub
 2. git clone https://github.com/<you>/nanoclaw.git
 3. cd nanoclaw
-4. claude
+4. copilot
 5. /setup
 ```
 
@@ -558,7 +558,7 @@ Updates to the setup flow:
 
 - Check if `upstream` remote exists; if not, add it: `git remote add upstream https://github.com/ridermw/nanoclaw.git`
 - Check if `origin` points to the user's fork (not ridermw). If it points to ridermw, guide them through the fork migration.
-- **Install marketplace plugin:** `claude plugin install nanoclaw-skills@nanoclaw-skills --scope project` — makes all feature skills available (hot-loaded, no restart)
+- **Install marketplace plugin:** `copilot plugin install nanoclaw-skills@nanoclaw-skills --scope project` — makes all feature skills available (hot-loaded, no restart)
 - **Ask which channels to add:** present channel options (Discord, Telegram, Slack, WhatsApp, Gmail), run corresponding `/add-*` skills for selected channels
 - **Offer dependent skills:** after a channel is set up, offer relevant add-ons (e.g., Agent Swarm after Telegram, voice transcription after WhatsApp)
 - **Optionally enable community marketplaces:** ask if the user wants community skills, install those marketplace plugins too
@@ -582,7 +582,7 @@ Marketplace configuration so the official marketplace is auto-registered:
 
 ### Skills directory on main
 
-The `.claude/skills/` directory on `main` retains only operational skills (setup, debug, update-nanoclaw, customize, update-skills). Feature skills (add-discord, add-telegram, etc.) live in the marketplace repo, installed via `claude plugin install` during `/setup` or `/customize`.
+The `.claude/skills/` directory on `main` retains only operational skills (setup, debug, update-nanoclaw, customize, update-skills). Feature skills (add-discord, add-telegram, etc.) live in the marketplace repo, installed via `copilot plugin install` during `/setup` or `/customize`.
 
 ### Skills engine removal
 

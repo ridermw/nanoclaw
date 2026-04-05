@@ -51,7 +51,7 @@ Each invocation = one API call to Claude (one "turn").
 ### Flow per turn:
 
 1. **Prepare messages** — trim context, run compaction if needed
-2. **Call the Anthropic API** (via `mW1` streaming function)
+2. **Call the upstream API** (via `mW1` streaming function)
 3. **Extract tool_use blocks** from the response
 4. **Branch:**
    - If **no tool_use blocks** → stop (run stop hooks, return)
@@ -635,7 +635,7 @@ function createSdkMcpServer(options: {
 | `GU1` | Individual tool executor |
 | `lTq` | SDK session runner (calls EZ directly) |
 | `bd1` | stdin reader (JSON-lines from transport) |
-| `mW1` | Anthropic API streaming caller |
+| `mW1` | Upstream API streaming caller |
 
 ## Key Files
 

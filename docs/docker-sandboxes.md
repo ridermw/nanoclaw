@@ -17,14 +17,14 @@ Host (macOS / Windows WSL)
 
 Each agent runs in its own container, inside a micro VM that is fully isolated from your host. Two layers of isolation: per-agent containers + the VM boundary.
 
-The sandbox provides a MITM proxy at `host.docker.internal:3128` that handles network access and injects your Anthropic API key automatically.
+The sandbox provides a MITM proxy at `host.docker.internal:3128` that handles network access and can inject credentials automatically.
 
 > **Note:** This guide is based on a validated setup running on macOS (Apple Silicon) with WhatsApp. Other channels (Telegram, Slack, etc.) and environments (Windows WSL) may require additional proxy patches for their specific HTTP/WebSocket clients. The core patches (container runner, credential proxy, Dockerfile) apply universally — channel-specific proxy configuration varies.
 
 ## Prerequisites
 
 - **Docker Desktop v4.40+** with Sandbox support
-- **Anthropic API key** (the sandbox proxy manages injection)
+- **GitHub token** (`COPILOT_GITHUB_TOKEN`) — passed to containers via stdin
 - For **Telegram**: a bot token from [@BotFather](https://t.me/BotFather) and your chat ID
 - For **WhatsApp**: a phone with WhatsApp installed
 
@@ -166,9 +166,9 @@ In `src/container-runtime.ts`, the `cleanupOrphans()` function matches container
 // In cleanupOrphans(), filter out os.hostname() from the list of containers to stop
 ```
 
-### 4e. Credential proxy — route through MITM proxy
+### 4e. Outbound API requests — route through MITM proxy
 
-In `src/credential-proxy.ts`, upstream API requests need to go through the sandbox proxy. Add `HttpsProxyAgent` to outbound requests:
+If using the sandbox proxy, outbound API requests need to go through it. Add `HttpsProxyAgent` to outbound requests in any module that makes HTTPS calls:
 
 ```typescript
 import { HttpsProxyAgent } from 'https-proxy-agent';
@@ -288,7 +288,7 @@ Set `COPILOT_GITHUB_TOKEN` in your `.env` file. The token is passed securely to 
 All traffic from the sandbox routes through the host proxy at `host.docker.internal:3128`:
 
 ```
-Agent container → DinD bridge → Sandbox VM → host.docker.internal:3128 → Host proxy → api.anthropic.com
+Agent container → DinD bridge → Sandbox VM → host.docker.internal:3128 → Host proxy → api.github.com
 ```
 
 **"Bypass" does not mean traffic skips the proxy.** It means the proxy passes traffic through without MITM inspection. Node.js doesn't automatically use `HTTP_PROXY` env vars — you need explicit `HttpsProxyAgent` configuration in every HTTP/WebSocket client.
@@ -325,7 +325,7 @@ All bind-mounted paths must be under the workspace directory. Check:
 - Is the CA cert copied to the project root?
 - Has the empty `.env` shadow file been created?
 
-### Agent containers can't reach Anthropic API
+### Agent containers can't reach GitHub Copilot API
 Verify proxy env vars are forwarded to agent containers. Check container logs for `HTTP_PROXY=http://host.docker.internal:3128`.
 
 ### WhatsApp error 405
