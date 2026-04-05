@@ -1,10 +1,8 @@
 # Changelog
 
-All notable changes to NanoClaw will be documented in this file.
+All notable changes to NanoPilot (formerly NanoClaw Copilot Edition) will be documented in this file.
 
-For detailed release notes, see the [full changelog on the documentation site](https://docs.nanoclaw.dev/changelog).
-
-## [2.0.0] - 2026-04-04 (Copilot Edition)
+## [2.0.0] - 2026-04-04 (NanoPilot)
 
 **Breaking:** Replaced Anthropic Claude Agent SDK with GitHub Copilot SDK (`@github/copilot-sdk`).
 

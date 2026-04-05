@@ -1,6 +1,6 @@
-# NanoClaw (Copilot Edition)
+# NanoPilot
 
-Personal AI assistant powered by GitHub Copilot SDK. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
+Personal AI assistant powered by GitHub Copilot SDK. Fork of [NanoClaw](https://github.com/qwibitai/nanoclaw). See [README.md](README.md) for setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
 
 ## Quick Context
 

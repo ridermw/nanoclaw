@@ -1,213 +1,207 @@
 <p align="center">
-  <img src="assets/nanoclaw-logo.png" alt="NanoClaw" width="400">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/nanopilot-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/nanopilot-logo.png">
+    <img src="assets/nanopilot-logo.png" alt="NanoPilot" width="480">
+  </picture>
 </p>
 
 <p align="center">
-  <b>Copilot Edition</b> — An AI assistant that runs agents securely in their own containers, powered by GitHub Copilot instead of Claude.
+  <strong>Your personal AI assistant, powered by GitHub Copilot.</strong><br>
+  Secure containerized agents. No Anthropic API key required.
 </p>
 
 <p align="center">
-  <a href="https://nanoclaw.dev">nanoclaw.dev</a>&nbsp; • &nbsp;
-  <a href="https://docs.nanoclaw.dev">docs</a>&nbsp; • &nbsp;
-  <a href="README_zh.md">中文</a>&nbsp; • &nbsp;
-  <a href="README_ja.md">日本語</a>&nbsp; • &nbsp;
-  <a href="https://discord.gg/VDdww8qS42"><img src="https://img.shields.io/discord/1470188214710046894?label=Discord&logo=discord&v=2" alt="Discord" valign="middle"></a>&nbsp; • &nbsp;
-  <a href="repo-tokens"><img src="repo-tokens/badge.svg" alt="34.9k tokens, 17% of context window" valign="middle"></a>
+  <a href="https://discord.gg/VDdww8qS42"><img src="https://img.shields.io/discord/1470188214710046894?label=Discord&logo=discord&v=2" alt="Discord" valign="middle"></a>
 </p>
 
 ---
 
-> **This is a fork of [NanoClaw](https://github.com/qwibitai/nanoclaw) that replaces the Anthropic Claude Agent SDK with the official [GitHub Copilot SDK](https://github.com/github/copilot-sdk).** Everything works the same way — same architecture, same channels, same container isolation — but powered by your GitHub Copilot subscription instead of an Anthropic API key.
+## The Story
 
-## Why I Built NanoClaw
+[NanoClaw](https://github.com/qwibitai/nanoclaw) is one of the best AI agent projects out there — a lightweight personal assistant that runs in isolated containers, with multi-channel messaging and a codebase small enough to actually understand. We loved everything about it.
 
-[OpenClaw](https://github.com/openclaw/openclaw) is an impressive project, but I wouldn't have been able to sleep if I had given complex software I didn't understand full access to my life. OpenClaw has nearly half a million lines of code, 53 config files, and 70+ dependencies. Its security is at the application level (allowlists, pairing codes) rather than true OS-level isolation. Everything runs in one Node process with shared memory.
+Except it required an Anthropic API key.
 
-NanoClaw provides that same core functionality, but in a codebase small enough to understand: one process and a handful of files. Agents run in their own Linux containers with filesystem isolation, not merely behind permission checks.
+Millions of developers already have GitHub Copilot through work or personal subscriptions. **NanoPilot brings the full NanoClaw experience to all of them** — same architecture, same container isolation, same skill system — powered by the official [GitHub Copilot SDK](https://github.com/github/copilot-sdk).
+
+## NanoClaw vs NanoPilot
+
+| | NanoClaw | NanoPilot |
+|---|---|---|
+| **AI Engine** | Claude Agent SDK | GitHub Copilot SDK |
+| **Auth** | Anthropic API key + OneCLI vault | `gh auth token` — that's it |
+| **Models** | Claude family | GPT-4.1, Claude Sonnet, o3, Gemini — anything Copilot offers |
+| **Cost** | Pay-per-token (Anthropic) | Included with Copilot subscription |
+| **Token Security** | OneCLI credential proxy | Stdin injection — never in env vars |
+| **Setup Complexity** | OneCLI + credential proxy + API key | One env var |
+
+Everything else is identical: channels, containers, skills, scheduling, IPC, database.
 
 ## Quick Start
 
 ```bash
-gh repo fork ridermw/nanoclaw --clone
-cd nanoclaw
+# Clone and enter
+gh repo fork ridermw/nanoclaw --clone && cd nanoclaw
+
+# One env var — that's all the config you need
+echo "COPILOT_GITHUB_TOKEN=$(gh auth token)" > .env
+
+# Build and run
+npm install && npm run build && ./container/build.sh
+npm run dev
 ```
 
 <details>
-<summary>Without GitHub CLI</summary>
+<summary>Don't have GitHub CLI?</summary>
 
-1. Fork [ridermw/nanoclaw](https://github.com/ridermw/nanoclaw) on GitHub (click the Fork button)
-2. `git clone https://github.com/<your-username>/nanoclaw.git`
-3. `cd nanoclaw`
+1. Fork [ridermw/nanoclaw](https://github.com/ridermw/nanoclaw) on GitHub
+2. `git clone https://github.com/<you>/nanoclaw.git && cd nanoclaw`
+3. Create a token at [github.com/settings/tokens](https://github.com/settings/tokens) with `copilot` scope
+4. `echo "COPILOT_GITHUB_TOKEN=your_token" > .env`
+5. `npm install && npm run build && ./container/build.sh && npm run dev`
 
 </details>
 
-Set your GitHub token in `.env`:
-```bash
-echo "COPILOT_GITHUB_TOKEN=$(gh auth token)" > .env
-```
+**Requirements:** GitHub Copilot subscription · Node.js 20+ · [Docker](https://docker.com/products/docker-desktop) or [Apple Container](https://github.com/apple/container)
 
-Then run `npm install && npm run build` and start with `npm run dev`.
-
-> **Note:** This fork uses the GitHub Copilot SDK. You need a GitHub Copilot subscription (Individual, Business, or Enterprise). No Anthropic API key required.
-
-## Philosophy
-
-**Small enough to understand.** One process, a few source files and no microservices. If you want to understand the full NanoClaw codebase, just read it — it's small enough.
-
-**Secure by isolation.** Agents run in Linux containers (Apple Container on macOS, or Docker) and they can only see what's explicitly mounted. Bash access is safe because commands run inside the container, not on your host.
-
-**Built for the individual user.** NanoClaw isn't a monolithic framework; it's software that fits each user's exact needs. Instead of becoming bloatware, NanoClaw is designed to be bespoke. You make your own fork and modify it to match your needs.
-
-**Customization = code changes.** No configuration sprawl. Want different behavior? Modify the code. The codebase is small enough that it's safe to make changes.
-
-**AI-native.**
-- No complex setup wizard; a few commands get you running.
-- No monitoring dashboard; check the logs directly.
-- No debugging tools; the codebase is simple enough to trace any issue.
-
-**Skills over features.** Instead of adding features (e.g. support for Telegram) to the codebase, contributors submit skills like `/add-telegram` that transform your fork. You end up with clean code that does exactly what you need.
-
-**Best harness, your subscription.** This fork runs on the GitHub Copilot SDK, so anyone with a Copilot subscription can use it. No separate Anthropic API key needed.
-
-## What It Supports
-
-- **Multi-channel messaging** - Talk to your assistant from WhatsApp, Telegram, Discord, Slack, or Gmail. Add channels with skills like `/add-whatsapp` or `/add-telegram`. Run one or many at the same time.
-- **Isolated group context** - Each group has its own `CLAUDE.md` memory, isolated filesystem, and runs in its own container sandbox with only that filesystem mounted to it.
-- **Main channel** - Your private channel (self-chat) for admin control; every group is completely isolated
-- **Scheduled tasks** - Recurring jobs that run the agent and can message you back
-- **Web access** - Search and fetch content from the Web
-- **Container isolation** - Agents are sandboxed in Docker (macOS/Linux), [Docker Sandboxes](docs/docker-sandboxes.md) (micro VM isolation), or Apple Container (macOS)
-- **Credential security** - GitHub tokens are passed securely via stdin to containers at runtime. Tokens never appear in environment variables or container images.
-- **Agent Swarms** - Spin up teams of specialized agents that collaborate on complex tasks
-- **Optional integrations** - Add Gmail (`/add-gmail`) and more via skills
-
-## Usage
+## What You Can Do
 
 Talk to your assistant with the trigger word (default: `@Andy`):
 
 ```
-@Andy send an overview of the sales pipeline every weekday morning at 9am (has access to my Obsidian vault folder)
-@Andy review the git history for the past week each Friday and update the README if there's drift
-@Andy every Monday at 8am, compile news on AI developments from Hacker News and TechCrunch and message me a briefing
+@Andy every weekday morning at 9am, send me a sales pipeline summary
+@Andy review the git log each Friday and flag any README drift
+@Andy compile an AI news briefing from Hacker News every Monday at 8am
 ```
 
-From the main channel (your self-chat), you can manage groups and tasks:
+From your private channel:
 ```
-@Andy list all scheduled tasks across groups
-@Andy pause the Monday briefing task
+@Andy list all scheduled tasks
 @Andy join the Family Chat group
 ```
 
+### Features
+
+- **Multi-channel** — WhatsApp, Telegram, Discord, Slack, Gmail. Add with `/add-whatsapp`, `/add-telegram`, etc.
+- **Container isolation** — Each agent runs in its own Linux container. Only mounted directories are visible.
+- **Group memory** — Every group has its own `CLAUDE.md` and isolated filesystem.
+- **Model flexibility** — Set `COPILOT_MODEL=claude-sonnet-4` or `o3` or `gpt-4.1` in `.env`.
+- **Scheduled tasks** — Recurring jobs with script pre-checks and wake conditions.
+- **Secure tokens** — Injected via stdin, never in env vars. Token patterns redacted from logs.
+- **Conversation archiving** — Transcripts saved as markdown before context compaction.
+- **Web access** — Search and fetch content from the web.
+- **Skills, not features** — Add capabilities via `/add-*` skills. The core stays minimal.
+
+## How It Works
+
+```
+Channels → SQLite → Polling Loop → Container (Copilot SDK) → Response
+```
+
+Single Node.js process. Channels self-register at startup. Messages queue per-group. Agents run in isolated Linux containers via the Copilot SDK. IPC happens through the filesystem.
+
+```
+Host                              Container
+┌────────────────────┐            ┌──────────────────────────┐
+│  Channels          │            │  agent-runner             │
+│  SQLite DB         │──stdin───▶ │  CopilotClient({         │
+│  Task Scheduler    │            │    githubToken: ••••      │
+│  Container Runner  │◀──files──  │  })                      │
+│                    │            │  session.sendAndWait()    │
+└────────────────────┘            └──────────────────────────┘
+```
+
+<details>
+<summary>Key files</summary>
+
+| File | Purpose |
+|------|---------|
+| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
+| `src/container-runner.ts` | Spawns streaming agent containers |
+| `container/agent-runner/src/index.ts` | Copilot SDK agent (runs inside container) |
+| `src/channels/registry.ts` | Channel self-registration |
+| `src/task-scheduler.ts` | Scheduled tasks |
+| `src/db.ts` | SQLite (messages, groups, sessions) |
+| `groups/*/CLAUDE.md` | Per-group memory |
+
+</details>
+
 ## Customizing
 
-NanoClaw doesn't use configuration files. To make changes, modify the code directly:
+NanoPilot doesn't use configuration files. Want different behavior? Modify the code — it's small enough.
 
-- "Change the trigger word to @Bob"
-- "Remember in the future to make responses shorter and more direct"
-- "Add a custom greeting when I say good morning"
-- "Store conversation summaries weekly"
+- Change the trigger word → edit `src/config.ts`
+- Change the model → `COPILOT_MODEL=o3` in `.env`
+- Custom personality → edit `groups/*/CLAUDE.md`
+- Guided changes → run `/customize`
 
-Or run `/customize` for guided changes.
+## Staying in Sync with NanoClaw
 
-The codebase is small enough that an AI assistant can safely modify it.
+NanoPilot is a fork. Upstream improvements merge cleanly:
 
-## Contributing
-
-**Don't add features. Add skills.**
-
-If you want to add Telegram support, don't create a PR that adds Telegram to the core codebase. Instead, fork NanoClaw, make the code changes on a branch, and open a PR. We'll create a `skill/telegram` branch from your PR that other users can merge into their fork.
-
-Users then run `/add-telegram` on their fork and get clean code that does exactly what they need, not a bloated system trying to support every use case.
-
-### RFS (Request for Skills)
-
-Skills we'd like to see:
-
-**Communication Channels**
-- `/add-signal` - Add Signal as a channel
-
-## Requirements
-
-- macOS, Linux, or Windows (via WSL2)
-- Node.js 20+
-- [GitHub Copilot](https://github.com/features/copilot) subscription (Individual, Business, or Enterprise)
-- [GitHub CLI](https://cli.github.com/) (`gh auth token` provides the token)
-- [Apple Container](https://github.com/apple/container) (macOS) or [Docker](https://docker.com/products/docker-desktop) (macOS/Linux)
-
-## Architecture
-
-```
-Channels --> SQLite --> Polling loop --> Container (Copilot SDK) --> Response
+```bash
+git remote add upstream https://github.com/qwibitai/nanoclaw.git
+git fetch upstream main
+git merge upstream/main
 ```
 
-Single Node.js process. Channels are added via skills and self-register at startup — the orchestrator connects whichever ones have credentials present. Agents execute in isolated Linux containers with filesystem isolation. Only mounted directories are accessible. Per-group message queue with concurrency control. IPC via filesystem.
-
-For the full architecture details, see the [documentation site](https://docs.nanoclaw.dev/concepts/architecture).
-
-Key files:
-- `src/index.ts` - Orchestrator: state, message loop, agent invocation
-- `src/channels/registry.ts` - Channel registry (self-registration at startup)
-- `src/ipc.ts` - IPC watcher and task processing
-- `src/router.ts` - Message formatting and outbound routing
-- `src/group-queue.ts` - Per-group queue with global concurrency limit
-- `src/container-runner.ts` - Spawns streaming agent containers
-- `src/task-scheduler.ts` - Runs scheduled tasks
-- `src/db.ts` - SQLite operations (messages, groups, sessions, state)
-- `groups/*/CLAUDE.md` - Per-group memory
+The only divergence is in `container/agent-runner/` (Copilot SDK vs Claude SDK) and documentation. Core host-side code — channels, routing, IPC, scheduling — stays compatible.
 
 ## FAQ
 
-**Why Docker?**
+<details>
+<summary><strong>Why not just use NanoClaw?</strong></summary>
 
-Docker provides cross-platform support (macOS, Linux and even Windows via WSL2) and a mature ecosystem. On macOS, you can optionally switch to Apple Container via `/convert-to-apple-container` for a lighter-weight native runtime. For additional isolation, [Docker Sandboxes](docs/docker-sandboxes.md) run each container inside a micro VM.
+NanoClaw is excellent. But it requires an Anthropic API key and pay-per-token usage. Many developers already have GitHub Copilot through their employer or personal subscription. NanoPilot lets them use that existing access.
+</details>
 
-**Can I run this on Linux or Windows?**
+<details>
+<summary><strong>Is this affiliated with GitHub?</strong></summary>
 
-Yes. Docker is the default runtime and works on macOS, Linux, and Windows (via WSL2). Just run `/setup`.
+No. NanoPilot is an independent open-source project that uses the publicly available [GitHub Copilot SDK](https://github.com/github/copilot-sdk).
+</details>
 
-**Is this secure?**
+<details>
+<summary><strong>Is this secure?</strong></summary>
 
-Agents run in containers, not behind application-level permission checks. They can only access explicitly mounted directories. GitHub tokens are injected securely via stdin — they never appear in container environment variables or Docker args. Token patterns are redacted from all log output. You should still review what you're running, but the codebase is small enough that you actually can.
+Agents run in containers with filesystem isolation — not behind application-level permission checks. GitHub tokens are injected via stdin and never appear in env vars, Docker args, or logs. The codebase is small enough that you can audit the entire thing.
+</details>
 
-**Why no configuration files?**
+<details>
+<summary><strong>Do NanoClaw skills work?</strong></summary>
 
-We don't want configuration sprawl. Every user should customize NanoClaw so that the code does exactly what they want, rather than configuring a generic system. If you prefer having config files, add them yourself — the code is simple enough.
+Most skills work unchanged — channels, container skills, and operational skills are all compatible. The only exceptions are skills that directly reference the Claude Agent SDK or OneCLI.
+</details>
 
-**Can I use different models?**
+<details>
+<summary><strong>Can I switch models?</strong></summary>
 
-Yes. Set the `COPILOT_MODEL` environment variable in your `.env` file:
-
+Yes. Set `COPILOT_MODEL` in `.env` to any model your Copilot subscription supports:
 ```bash
-COPILOT_MODEL=gpt-4.1       # default
-COPILOT_MODEL=claude-sonnet-4
-COPILOT_MODEL=o3
+COPILOT_MODEL=gpt-4.1         # default
+COPILOT_MODEL=claude-sonnet-4  # Claude via Copilot
+COPILOT_MODEL=o3               # OpenAI o3
 ```
+</details>
 
-Any model available through your GitHub Copilot subscription can be used.
+<details>
+<summary><strong>Can I run this on Linux or Windows?</strong></summary>
 
-**How do I debug issues?**
+Yes. Docker works on macOS, Linux, and Windows (via WSL2). On macOS, you can also use Apple Container via `/convert-to-apple-container`.
+</details>
 
-Check the logs in `logs/nanoclaw.log`. The codebase is small enough to trace any issue directly.
+## Contributing
 
-**Why isn't the setup working for me?**
-
-Check logs in `logs/nanoclaw.log`. If you find a common issue, open a PR to improve the setup documentation.
-
-**What changes will be accepted into the codebase?**
-
-Only security fixes, bug fixes, and clear improvements will be accepted to the base configuration. That's all.
-
-Everything else (new capabilities, OS compatibility, hardware support, enhancements) should be contributed as skills.
-
-This keeps the base system minimal and lets every user customize their installation without inheriting features they don't want.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bug fixes, security fixes, and simplifications welcome. New capabilities should be contributed as [skills](docs/skills-as-branches.md).
 
 ## Community
 
-Questions? Ideas? [Join the Discord](https://discord.gg/VDdww8qS42).
+Questions? Ideas? [Join the NanoClaw Discord](https://discord.gg/VDdww8qS42).
 
-## Changelog
+## Acknowledgments
 
-See [CHANGELOG.md](CHANGELOG.md) for breaking changes, or the [full release history](https://docs.nanoclaw.dev/changelog) on the documentation site.
+NanoPilot exists because of the excellent work by the [NanoClaw](https://github.com/qwibitai/nanoclaw) team. This project wouldn't be possible without their architecture, philosophy, and commitment to keeping AI agents small, secure, and understandable.
 
 ## License
 

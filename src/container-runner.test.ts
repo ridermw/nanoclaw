@@ -140,8 +140,8 @@ describe('container-runner timeout behavior', () => {
     // Check spawn args don't contain COPILOT_GITHUB_TOKEN
     const spawnArgs = (spawn as ReturnType<typeof vi.fn>).mock.calls[0];
     const dockerArgs: string[] = spawnArgs[1];
-    const tokenEnvArg = dockerArgs.find(
-      (arg: string) => arg.includes('COPILOT_GITHUB_TOKEN='),
+    const tokenEnvArg = dockerArgs.find((arg: string) =>
+      arg.includes('COPILOT_GITHUB_TOKEN='),
     );
     expect(tokenEnvArg).toBeUndefined();
 
